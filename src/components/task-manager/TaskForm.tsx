@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 const defaultCategories = [
@@ -55,6 +55,15 @@ export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
     setIsAddingCategory(false);
   };
 
+  const handleDeleteCategory = (catToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newCategories = categories.filter(cat => cat !== catToDelete);
+    setCategories(newCategories);
+    if (category === catToDelete) {
+      setCategory(newCategories[0] || "");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
@@ -66,7 +75,7 @@ export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
     setTitle("");
     setPriority("null");
     setDueDate(null);
-    setCategory(categories[0]);
+    setCategory(categories[0] || "");
   };
 
   return (
@@ -128,8 +137,18 @@ export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
           </SelectTrigger>
           <SelectContent>
             {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
+              <SelectItem key={cat} value={cat} className="group">
+                <div className="flex justify-between items-center w-full">
+                  <span>{cat}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                    onClick={(e) => handleDeleteCategory(cat, e)}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
               </SelectItem>
             ))}
             <div className="relative">
