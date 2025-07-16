@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 
 const defaultCategories = [
@@ -41,8 +41,19 @@ export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
     initialTask?.priority || "null"
   );
   const [dueDate, setDueDate] = useState<Date | null>(initialTask?.dueDate || null);
-  const [category, setCategory] = useState(initialTask?.category || defaultCategories[0]);
-  const [newCategory, setNewCategory] = useState("");
+  const [categories, setCategories] = useState(defaultCategories);
+  const [category, setCategory] = useState(initialTask?.category || categories[0]);
+  const [newCategoryInput, setNewCategoryInput] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  const handleAddCategory = () => {
+    if (newCategoryInput.trim() && !categories.includes(newCategoryInput)) {
+      setCategories([...categories, newCategoryInput]);
+      setCategory(newCategoryInput);
+      setNewCategoryInput("");
+    }
+    setIsAddingCategory(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,13 +61,12 @@ export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
       title,
       priority,
       dueDate,
-      category: newCategory && !defaultCategories.includes(newCategory) ? newCategory : category
+      category
     });
     setTitle("");
     setPriority("null");
     setDueDate(null);
-    setCategory(defaultCategories[0]);
-    setNewCategory("");
+    setCategory(categories[0]);
   };
 
   return (
@@ -108,28 +118,61 @@ export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
 
       <div>
         <Label>Category</Label>
-        <Select value={category} onValueChange={setCategory}>
+        <Select 
+          value={category} 
+          onValueChange={setCategory}
+          open={isAddingCategory ? false : undefined}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            {defaultCategories.map((cat) => (
+            {categories.map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
             ))}
+            <div className="relative">
+              <div className="flex items-center px-2 py-1.5 text-sm">
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsAddingCategory(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add new category
+                </button>
+              </div>
+            </div>
           </SelectContent>
         </Select>
-      </div>
 
-      <div>
-        <Label htmlFor="new-category">Or add new category</Label>
-        <Input
-          id="new-category"
-          value={newCategory}
-          onChange={(e) => setNewCategory(e.target.value)}
-          placeholder="Enter new category"
-        />
+        {isAddingCategory && (
+          <div className="mt-2 flex gap-2">
+            <Input
+              autoFocus
+              value={newCategoryInput}
+              onChange={(e) => setNewCategoryInput(e.target.value)}
+              placeholder="Enter new category"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCategory();
+                }
+              }}
+            />
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={handleAddCategory}
+            >
+              Add
+            </Button>
+          </div>
+        )}
       </div>
 
       <Button type="submit" className="w-full">
