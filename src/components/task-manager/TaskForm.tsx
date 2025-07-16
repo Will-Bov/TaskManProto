@@ -1,50 +1,88 @@
 "use client";
 
-// ... (keep all previous imports and interfaces the same)
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+
+const defaultCategories = [
+  "Maths",
+  "HPE",
+  "English",
+  "Science",
+  "Computing",
+  "History",
+  "Food Tech"
+];
+
+interface TaskFormProps {
+  onSubmit: (task: {
+    title: string;
+    priority: "high" | "medium" | "low" | "null";
+    dueDate: Date | null;
+    category: string;
+  }) => void;
+  initialTask?: {
+    title: string;
+    priority: "high" | "medium" | "low" | "null";
+    dueDate: Date | null;
+    category: string;
+  };
+}
 
 export function TaskForm({ onSubmit, initialTask }: TaskFormProps) {
-  // ... (keep all existing state and functions the same)
+  const [title, setTitle] = useState(initialTask?.title || "");
+  const [priority, setPriority] = useState<"high" | "medium" | "low" | "null">(
+    initialTask?.priority || "null"
+  );
+  const [dueDate, setDueDate] = useState<Date | null>(initialTask?.dueDate || null);
+  const [categories, setCategories] = useState(defaultCategories);
+  const [category, setCategory] = useState(initialTask?.category || categories[0]);
+  const [newCategoryInput, setNewCategoryInput] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  const handleAddCategory = () => {
+    if (newCategoryInput.trim() && !categories.includes(newCategoryInput)) {
+      setCategories([...categories, newCategoryInput]);
+      setCategory(newCategoryInput);
+      setNewCategoryInput("");
+    }
+    setIsAddingCategory(false);
+  };
+
+  const handleDeleteCategory = (catToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newCategories = categories.filter(cat => cat !== catToDelete);
+    setCategories(newCategories);
+    if (category === catToDelete) {
+      setCategory(newCategories[0] || "");
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      title,
+      priority,
+      dueDate,
+      category
+    });
+    if (!initialTask) {
+      setTitle("");
+      setPriority("null");
+      setDueDate(null);
+      setCategory(categories[0] || "");
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* ... (keep all other form fields the same) */}
-
-      <div>
-        <Label>Category</Label>
-        <Select 
-          value={category} 
-          onValueChange={setCategory}
-          open={isAddingCategory ? false : undefined}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat} className="group">
-                <div className="flex justify-between items-center w-full">
-                  <span className="flex-1">{cat}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 ml-2 opacity-0 group-hover:opacity-100"
-                    onClick={(e) => handleDeleteCategory(cat, e)}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </SelectItem>
-            ))}
-            {/* ... (keep the add category section the same) */}
-          </SelectContent>
-        </Select>
-
-        {/* ... (keep the new category input section the same) */}
-      </div>
-
-      <Button type="submit" className="w-full">
-        {initialTask ? "Update Task" : "Add Task"}
-      </Button>
+      {/* ... rest of the component remains the same ... */}
     </form>
   );
 }
