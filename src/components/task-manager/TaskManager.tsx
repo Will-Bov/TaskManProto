@@ -9,50 +9,72 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { showSuccess, showError } from "@/utils/toast";
+import { Task, TaskPriority } from "@/types/task";
 
-const LOCAL_STORAGE_KEY = "taskManagerTasks";
+const LOCAL_STORAGE_KEY = "taskManagerTasks_v1";
 
 export function TaskManager() {
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedTasks) {
-      try {
-        const parsedTasks = JSON.parse(savedTasks);
-        const tasksWithDates = parsedTasks.map((task: any) => ({
+    try {
+      const savedTasks = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedTasks) {
+        const parsedTasks = JSON.parse(savedTasks) as Task[];
+        const tasksWithDates = parsedTasks.map(task => ({
           ...task,
           dueDate: task.dueDate ? new Date(task.dueDate) : null
         }));
         setTasks(tasksWithDates);
-      } catch (error) {
-        console.error("Failed to parse saved tasks", error);
       }
+    } catch (error) {
+      console.error("Failed to load tasks:", error);
+      showError("Failed to load saved tasks");
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
-  }, [tasks]);
+    if (!isLoading) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
+      } catch (error) {
+        console.error("Failed to save tasks:", error);
+        showError("Failed to save tasks");
+      }
+    }
+  }, [tasks, isLoading]);
 
-  const handleAddTask = (task: any) => {
-    if (editingTask) {
-      setTasks(tasks.map(t => t.id === editingTask.id ? { ...task, id: editingTask.id } : t));
-      setEditingTask(null);
-      showSuccess("Task updated successfully!");
-    } else {
-      setTasks([...tasks, { ...task, id: uuidv4() }]);
-      showSuccess("Task added successfully!");
+  const handleAddTask = (task: Omit<Task, 'id'>) => {
+    try {
+      if (editingTask) {
+        setTasks(tasks.map(t => t.id === editingTask.id ? { ...task, id: editingTask.id } : t));
+        setEditingTask(null);
+        showSuccess("Task updated successfully!");
+      } else {
+        setTasks([...tasks, { ...task, id: uuidv4() }]);
+        showSuccess("Task added successfully!");
+      }
+    } catch (error) {
+      console.error("Task operation failed:", error);
+      showError("Failed to save task");
     }
   };
 
   const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
-    showSuccess("Task deleted successfully!");
+    try {
+      setTasks(tasks.filter(task => task.id !== id));
+      showSuccess("Task deleted successfully!");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      showError("Failed to delete task");
+    }
   };
 
   const handleClearAllTasks = () => {
@@ -61,13 +83,18 @@ export function TaskManager() {
       return;
     }
     
-    if (confirm("Are you sure you want to delete all tasks?")) {
-      setTasks([]);
-      showSuccess("All tasks cleared successfully!");
+    if (confirm("Are you sure you want to delete all tasks? This cannot be undone.")) {
+      try {
+        setTasks([]);
+        showSuccess("All tasks cleared successfully!");
+      } catch (error) {
+        console.error("Clear all failed:", error);
+        showError("Failed to clear tasks");
+      }
     }
   };
 
-  const handleEditTask = (task: any) => {
+  const handleEditTask = (task: Task) => {
     setEditingTask(task);
   };
 
@@ -75,6 +102,14 @@ export function TaskManager() {
     task.title.toLowerCase().includes(filter.toLowerCase()) ||
     task.category.toLowerCase().includes(filter.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 text-center">
+        <p>Loading tasks...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -85,7 +120,6 @@ export function TaskManager() {
         </div>
       </div>
       
-      {/* Task Form Card */}
       <Card className="p-6 space-y-4">
         <TaskForm 
           onSubmit={handleAddTask} 
@@ -93,7 +127,6 @@ export function TaskManager() {
         />
       </Card>
 
-      {/* Filter and Actions */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 space-y-2">
           <Label htmlFor="filter">Filter tasks</Label>
@@ -115,7 +148,6 @@ export function TaskManager() {
         </div>
       </div>
 
-      {/* Tasks List */}
       <div className="space-y-4">
         <h2 className="font-medium text-lg">Your Tasks</h2>
         {filteredTasks.length === 0 ? (
