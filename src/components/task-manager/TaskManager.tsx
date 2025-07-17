@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { showSuccess, showError } from "@/utils/toast";
 
 const LOCAL_STORAGE_KEY = "taskManagerTasks";
 
@@ -22,7 +23,6 @@ export function TaskManager() {
     if (savedTasks) {
       try {
         const parsedTasks = JSON.parse(savedTasks);
-        // Convert string dates back to Date objects
         const tasksWithDates = parsedTasks.map((task: any) => ({
           ...task,
           dueDate: task.dueDate ? new Date(task.dueDate) : null
@@ -43,13 +43,28 @@ export function TaskManager() {
     if (editingTask) {
       setTasks(tasks.map(t => t.id === editingTask.id ? { ...task, id: editingTask.id } : t));
       setEditingTask(null);
+      showSuccess("Task updated successfully!");
     } else {
       setTasks([...tasks, { ...task, id: uuidv4() }]);
+      showSuccess("Task added successfully!");
     }
   };
 
   const handleDeleteTask = (id: string) => {
     setTasks(tasks.filter(task => task.id !== id));
+    showSuccess("Task deleted successfully!");
+  };
+
+  const handleClearAllTasks = () => {
+    if (tasks.length === 0) {
+      showError("No tasks to clear!");
+      return;
+    }
+    
+    if (confirm("Are you sure you want to delete all tasks?")) {
+      setTasks([]);
+      showSuccess("All tasks cleared successfully!");
+    }
   };
 
   const handleEditTask = (task: any) => {
@@ -63,7 +78,12 @@ export function TaskManager() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold">Task Manager</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Task Manager</h1>
+        <div className="text-sm text-gray-500">
+          {filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}
+        </div>
+      </div>
       
       {/* Task Form Card */}
       <Card className="p-6 space-y-4">
@@ -73,22 +93,40 @@ export function TaskManager() {
         />
       </Card>
 
-      {/* Filter Input */}
-      <div className="space-y-2">
-        <Label htmlFor="filter">Filter tasks</Label>
-        <Input
-          id="filter"
-          placeholder="Search tasks..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+      {/* Filter and Actions */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1 space-y-2">
+          <Label htmlFor="filter">Filter tasks</Label>
+          <Input
+            id="filter"
+            placeholder="Search tasks..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          />
+        </div>
+        <div className="flex items-end">
+          <Button 
+            variant="destructive" 
+            onClick={handleClearAllTasks}
+            disabled={tasks.length === 0}
+          >
+            Clear All Tasks
+          </Button>
+        </div>
       </div>
 
       {/* Tasks List */}
       <div className="space-y-4">
         <h2 className="font-medium text-lg">Your Tasks</h2>
         {filteredTasks.length === 0 ? (
-          <p className="text-center text-gray-500 py-4">No tasks found</p>
+          <Card className="p-8 text-center">
+            <p className="text-gray-500 mb-4">No tasks found</p>
+            {tasks.length > 0 ? (
+              <p className="text-sm text-gray-400">Try adjusting your search filter</p>
+            ) : (
+              <p className="text-sm text-gray-400">Add your first task using the form above</p>
+            )}
+          </Card>
         ) : (
           <div className="space-y-3">
             {filteredTasks.map((task) => (
