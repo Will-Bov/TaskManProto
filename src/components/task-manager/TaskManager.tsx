@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { TaskForm } from "./TaskForm";
 import { TaskItem } from "./TaskItem";
@@ -9,10 +9,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 
+const LOCAL_STORAGE_KEY = "taskManagerTasks";
+
 export function TaskManager() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [editingTask, setEditingTask] = useState<any>(null);
   const [filter, setFilter] = useState("");
+
+  // Load tasks from localStorage on component mount
+  useEffect(() => {
+    const savedTasks = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedTasks) {
+      try {
+        const parsedTasks = JSON.parse(savedTasks);
+        // Convert string dates back to Date objects
+        const tasksWithDates = parsedTasks.map((task: any) => ({
+          ...task,
+          dueDate: task.dueDate ? new Date(task.dueDate) : null
+        }));
+        setTasks(tasksWithDates);
+      } catch (error) {
+        console.error("Failed to parse saved tasks", error);
+      }
+    }
+  }, []);
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
 
   const handleAddTask = (task: any) => {
     if (editingTask) {
