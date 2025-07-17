@@ -3,7 +3,9 @@ import dyadComponentTagger from "@dyad-sh/react-vite-component-tagger";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// https://vitejs.dev/config/
 export default defineConfig(() => ({
+  base: "/task-manager/", // Match your repo name
   server: {
     host: "::",
     port: 8080,
